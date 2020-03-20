@@ -1,0 +1,14 @@
+#!/bin/sh
+#
+# rtctool-cron
+#
+# by Andreas Steinmetz, 2020
+#
+# This file is put in the public domain. Have fun!
+#
+chronyc -n waitsync 100 0.001 0.2 6 > /dev/null 2>&1 || exit 0
+stratum=`chronyc -n tracking | grep Stratum | sed 's/.* //'`
+[ "$stratum" = "" ] && exit 0
+[ $stratum -ge 12 ] && exit 0
+/sbin/rtctool -s > /dev/null 2>&1
+exit 0

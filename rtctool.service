@@ -1,0 +1,21 @@
+#
+# rtctool.service
+#
+# by Andreas Steinmetz, 2020
+#
+# This file is put in the public domain. Have fun!
+#
+[Unit]
+Description=Set System Time from RTC and start PPS SHM clock daemon
+Before=basic.target
+After=local-fs.target sysinit.target
+DefaultDependencies=no
+
+[Service]
+Type=forking
+ExecStartPre=/sbin/rtctool -r
+ExecStart=/sbin/rtctool -b -d
+GuessMainPID=yes
+
+[Install]
+WantedBy=basic.target

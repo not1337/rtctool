@@ -1,0 +1,84 @@
+A short HOWTO on using a DS3231 RTC with SQW for precision clock discipline
+
+1. Install RTC or RTC/EEPROM board
+
+- get "Arduino DS3231 Precision RTC Module"
+- remove 200 ohm resistor (top right black thing on parts side of PCB) if
+  you are using a non rechargable CR2032, it is labelled "201" and close
+  to the "SCL" hole of the "SCL SDA VCC GND" extension holes.
+- You can use any DS3231 based breakout as long as it let's you access
+  the SQW pin and already has an integrated pullup resistor for the pin.
+  I would advise, however, to use a breakout with a replaceable battery
+  that uses a battery type that is easy to get.
+- run "pinout" to see the J8 pinout
+- connect Vcc to J8-1, SDA to J8-3, SCL to J8-5, GND to J8-9, SQW to J8-12,
+  if you use another pin for SQW you will have to adapt the "gpiopin"
+  value of the "dtoverlay" line in /boot/config.txt accordingly (see below).
+
+2. Enable RTC
+
+- run "sudo /bin/bash"
+- run "raspi-config", goto "Interfacing Options/I2C", select "Enable"
+- verify by running "i2cdetect -y 1", should list 57 and 68
+- run "make install" to install rtctool
+- run "rtctool -s" to set the rtc time
+
+3. Enable PPS
+
+- run "sudo /bin/bash"
+- add "dtoverlay=pps-gpio,gpiopin=18,assert_falling_edge" to /boot/config.txt
+- add "pps-gpio" to /etc/modules
+- run "rtctool -P 1" to enable PPS output
+- reboot
+- test with "pps-test /dev/pps0" (you may need to "apt-get install pps-tools")
+
+3. Enable Standalone PPS using Chrony
+
+- run "apt-get install chrony" to install chrony
+- comment "pool ..." in /etc/chrony/chrony.conf
+- comment "rtcsync" in /etc/chrony/chrony.conf
+  (kernel updated clock is 0.5s off, seems to get the required falling edge
+  wrong, use "rtctool -s" via cron instead while synced to NTP)
+- add "refclock PPS /dev/pps0 refid GPIO lock RTC noselect" in
+  /etc/chrony/chrony.conf
+- add "refclock SHM 2:perm=0660 refid RTC stratum 12" in
+  /etc/chrony/chrony.conf (*)
+- add "local stratum 12 orphan"
+- add options "-P 1 -m" to "DAEMON_OPTS" in /etc/default/chrony
+- add the lines "env NTP_CONF=/etc/chrony/chrony.conf" and "option ntp_servers"
+  in /etc/dhcpcd.conf if you are using dhcpcd (probably yes)
+- reboot or restart dhcpcd and then chrony to get the changes in effect
+- run "rtctool -b -d" to start the PPS clock source daemon
+- run "systemctl restart chrony" to restart chronyd
+- verify a working setup using "chronyc sources" (*)
+- install service with "make install-service"
+
+(*) Optionally calibrate the ageing value of the RTC for best results:
+
+- Temporarily aappend "noselect" to the "refclock SHM ..." line in
+  /etc/chrony/chrony.conf and restart chrony with "systemctl restart chrony"
+- Make sure that chrony uses a stable and low jitter NTP source, preferrably
+- a local stratum 1 server (e.g. a PPS anf GPS disciplined local server).
+- Run "rtctool -e" to get an estimate for the ageing value (takes 30 minutes).
+  You can use this value directly by running "rtctool -A <value>" or do
+  manual fine calibration (takes some days for every step).
+- To fine calibrate, run "rtctool -A <value>", then watch the "Last sample"
+  drift of the "RTC" line of the output of "chronyc sources" over the
+  next few days to get the drift for e.g. 48 hours.
+- Increase or decrease the ageing value by one and repeat the process,
+  until you have found the optimum ageing value, i.e. the value for
+  which the drift is minimal.
+- After having found the optimal ageing value and having set it using
+  "rtctool -A <value>", remove the appended "noselect" from the
+  "refclock SHM ..." line in /etc/chrony/chrony.conf and restart chrony
+  "systemctl restart chrony".
+- Remember the ageing value - if you need to replace the battery while
+  the RTC breakout is not powered, you will have to reconfigure the
+  RTC (set time, enable PPS output, set ageing value).
+
+4. Access Add-On EEPROM (probably a 24CXX type) available on some breakouts
+
+- run "make libeeprom_i2c.a" to create a small static library
+- include "eeprom_i2c.h" in your source and link with -leeprom_i2c
+- see "eeprom_i2c.h" for usage info, usage is really simple
+
