@@ -55,10 +55,10 @@ A short HOWTO on using a DS3231 RTC with SQW for precision clock discipline
 
 (*) Optionally calibrate the ageing value of the RTC for best results:
 
-- Temporarily aappend "noselect" to the "refclock SHM ..." line in
+- Temporarily append "noselect" to the "refclock SHM ..." line in
   /etc/chrony/chrony.conf and restart chrony with "systemctl restart chrony"
 - Make sure that chrony uses a stable and low jitter NTP source, preferrably
-- a local stratum 1 server (e.g. a PPS anf GPS disciplined local server).
+- a local stratum 1 server (e.g. a PPS and GPS disciplined local server).
 - Run "rtctool -e" to get an estimate for the ageing value (takes 30 minutes).
   You can use this value directly by running "rtctool -A <value>" or do
   manual fine calibration (takes some days for every step).
