@@ -218,7 +218,15 @@ static int ds3231_systohc(int fd,int relaxed)
 	if(!relaxed)
 	{
 		if(clock_gettime(CLOCK_REALTIME,&now))goto err2;
-		if(now.tv_sec!=next.tv_sec+1||next.tv_nsec<999000000)goto err2;
+		if(now.tv_sec==next.tv_sec)
+		{
+			if(now.tv_nsec<999000000)goto err2;
+		}
+		else if(now.tv_sec==next.tv_sec+1)
+		{
+			if(now.tv_nsec>1000000)goto err2;
+		}
+		else goto err2;
 	}
 	if(ds3231_write_time(fd,&datim))goto err2;
 	if(m)if(ds3231_pps(fd,1))goto err1;
@@ -565,7 +573,7 @@ int main(int argc,char *argv[])
 		if(op!=-1)usage();
 		op=1;
 		rt=1;
-		rel=0;
+		rel=1;
 		break;
 
 	case 'r':
