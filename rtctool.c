@@ -200,7 +200,7 @@ static int ds3231_pps(int fd,int mode)
 	}
 }
 
-static int ds3231_systohc(int fd)
+static int ds3231_systohc(int fd,int relaxed)
 {
 	int m;
 	struct timespec now;
@@ -215,8 +215,11 @@ static int ds3231_systohc(int fd)
 	gmtime_r(&now.tv_sec,&datim);
 	if(clock_nanosleep(CLOCK_REALTIME,TIMER_ABSTIME,&next,NULL))goto err1;
 	if(m)if(ds3231_pps(fd,0))goto err1;
-	if(clock_gettime(CLOCK_REALTIME,&now))goto err2;
-	if(now.tv_sec!=next.tv_sec+1||next.tv_nsec<999000000)goto err2;
+	if(!relaxed)
+	{
+		if(clock_gettime(CLOCK_REALTIME,&now))goto err2;
+		if(now.tv_sec!=next.tv_sec+1||next.tv_nsec<999000000)goto err2;
+	}
 	if(ds3231_write_time(fd,&datim))goto err2;
 	if(m)if(ds3231_pps(fd,1))goto err1;
 	return 0;
@@ -499,7 +502,7 @@ fprintf(stderr,
 "\n"
 "rtctool -h\n"
 "rtctool [-i <i2cid>] -t\n"
-"rtctool [-i <i2cid>] -s\n"
+"rtctool [-i <i2cid>] -s|-S\n"
 "rtctool [-i <i2cid>] [-c <ppsid>] -r\n"
 "rtctool [-i <i2cid>] -a\n"
 "rtctool [-i <i2cid>] -A value\n"
@@ -511,7 +514,8 @@ fprintf(stderr,
 "\n"
 "-h    this help text\n"
 "-t    print rtc time\n"
-"-s    system time to rtc time\n"
+"-s    system time to rtc time (strict checks)\n"
+"-S    system time to rtc time (relaxed checks for installation)\n"
 "-r    rtc time to system time\n"
 "-a    print ageing value\n"
 "-A    set ageing value (-127 <= value <= 127)\n"
@@ -536,6 +540,7 @@ int main(int argc,char *argv[])
 	int val=0;
 	int rt=0;
 	int bg=0;
+	int rel=0;
 	int c;
 	int fd1;
 	int fd2;
@@ -543,7 +548,7 @@ int main(int argc,char *argv[])
 	struct sched_param s;
 	char bfr[32];
 
-	while((c=getopt(argc,argv,"htsraA:pP:edTi:c:n:b"))!=-1)switch(c)
+	while((c=getopt(argc,argv,"htsSraA:pP:edTi:c:n:b"))!=-1)switch(c)
 	{
 	case 't':
 		if(op!=-1)usage();
@@ -554,6 +559,13 @@ int main(int argc,char *argv[])
 		if(op!=-1)usage();
 		op=1;
 		rt=1;
+		break;
+
+	case 'S':
+		if(op!=-1)usage();
+		op=1;
+		rt=1;
+		rel=0;
 		break;
 
 	case 'r':
@@ -662,7 +674,7 @@ int main(int argc,char *argv[])
 			fprintf(stderr,"Can't access DS3231 device.\n");
 			return 1;
 		}
-		if(ds3231_systohc(fd1))
+		if(ds3231_systohc(fd1,rel))
 		{
 			fprintf(stderr,"Can't set DS3231 time from system "
 				"time.\n");

@@ -21,7 +21,7 @@ A short HOWTO on using a DS3231 RTC with SQW for precision clock discipline
 - run "raspi-config", goto "Interfacing Options/I2C", select "Enable"
 - verify by running "i2cdetect -y 1", should list 57 and 68
 - run "make install" to install rtctool
-- run "rtctool -s" to set the rtc time
+- run "rtctool -s" to set the rtc time, if that fails try "rtctool -S"
 
 3. Enable PPS
 
