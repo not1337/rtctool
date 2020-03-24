@@ -216,7 +216,7 @@ static int ds3231_systohc(int fd)
 	if(clock_nanosleep(CLOCK_REALTIME,TIMER_ABSTIME,&next,NULL))goto err1;
 	if(m)if(ds3231_pps(fd,0))goto err1;
 	if(clock_gettime(CLOCK_REALTIME,&now))goto err2;
-	if(now.tv_sec!=next.tv_sec||next.tv_nsec<999000000)goto err2;
+	if(now.tv_sec!=next.tv_sec+1||next.tv_nsec<999000000)goto err2;
 	if(ds3231_write_time(fd,&datim))goto err2;
 	if(m)if(ds3231_pps(fd,1))goto err1;
 	return 0;
