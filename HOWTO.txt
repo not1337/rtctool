@@ -51,7 +51,7 @@ A short HOWTO on using a DS3231 RTC with SQW for precision clock discipline
 - run "rtctool -b -d" to start the PPS clock source daemon
 - run "systemctl restart chrony" to restart chronyd
 - verify a working setup using "chronyc sources" (*)
-- install service with "make install-service"
+- install service with "make install-service" (*2)
 
 (*) Optionally calibrate the ageing value of the RTC for best results:
 
@@ -75,6 +75,9 @@ A short HOWTO on using a DS3231 RTC with SQW for precision clock discipline
 - Remember the ageing value - if you need to replace the battery while
   the RTC breakout is not powered, you will have to reconfigure the
   RTC (set time, enable PPS output, set ageing value).
+
+(*2) Optionally use chrony2rtc instead of the rtctool-cron job, if you
+     do not use cron.
 
 4. Access Add-On EEPROM (probably a 24CXX type) available on some breakouts
 
