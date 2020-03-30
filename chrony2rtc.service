@@ -1,0 +1,20 @@
+#
+# rtctool.service
+#
+# by Andreas Steinmetz, 2020
+#
+# This file is put in the public domain. Have fun!
+#
+[Unit]
+Description=Set RTC Time from chrony when chrony is properly synced
+Before=basic.target
+After=local-fs.target sysinit.target
+DefaultDependencies=no
+
+[Service]
+Type=forking
+ExecStart=/sbin/chrony2rtc -d -s 12 -c 0.001 -S 0.2
+GuessMainPID=yes
+
+[Install]
+WantedBy=basic.target
