@@ -510,14 +510,14 @@ fprintf(stderr,
 "\n"
 "rtctool -h\n"
 "rtctool [-i <i2cid>] -t\n"
-"rtctool [-i <i2cid>] -s|-S\n"
-"rtctool [-i <i2cid>] [-c <ppsid>] -r\n"
+"rtctool [-i <i2cid>] [-R priority] -s|-S\n"
+"rtctool [-i <i2cid>] [-R priority] [-c <ppsid>] -r\n"
 "rtctool [-i <i2cid>] -a\n"
 "rtctool [-i <i2cid>] -A value\n"
 "rtctool [-i <i2cid>] -p\n"
 "rtctool [-i <i2cid>] -P value\n"
-"rtctool [-i <i2cid>] [-c <ppsid>] -e\n"
-"rtctool [-i <i2cid>] [-c <ppsid>] [-n <ntpid] [-b] -d\n"
+"rtctool [-i <i2cid>] [-R priority] [-c <ppsid>] -e\n"
+"rtctool [-i <i2cid>] [-R priority] [-c <ppsid>] [-n <ntpid] [-b] -d\n"
 "rtctool [-i <i2cid>] -T\n"
 "\n"
 "-h    this help text\n"
@@ -535,6 +535,7 @@ fprintf(stderr,
 "-i    i2c bus number, default 1, range 0-1\n"
 "-c    pps device number, default 0, range 0-3\n"
 "-n    ntp shared memory id, default 2, range 0-9\n"
+"-R    set realtime priority (default 99)\n"
 "-b    daemonize and run in background\n");
 exit(1);
 }
@@ -547,6 +548,7 @@ int main(int argc,char *argv[])
 	int op=-1;
 	int val=0;
 	int rt=0;
+	int rtlvl=0;
 	int bg=0;
 	int rel=0;
 	int c;
@@ -556,7 +558,7 @@ int main(int argc,char *argv[])
 	struct sched_param s;
 	char bfr[32];
 
-	while((c=getopt(argc,argv,"htsSraA:pP:edTi:c:n:b"))!=-1)switch(c)
+	while((c=getopt(argc,argv,"htsSraA:pP:edTi:c:n:bR:"))!=-1)switch(c)
 	{
 	case 't':
 		if(op!=-1)usage();
@@ -642,6 +644,11 @@ int main(int argc,char *argv[])
 		bg=1;
 		break;
 
+	case 'R':
+		rtlvl=atoi(optarg);
+		if(rtlvl<1||rtlvl>sched_get_priority_max(SCHED_RR))usage();
+		break;
+
 	case 'h':
 	default:usage();
 	}
@@ -651,7 +658,8 @@ int main(int argc,char *argv[])
 
 	if(rt)
 	{
-		s.sched_priority=sched_get_priority_max(SCHED_RR);
+		if(rtlvl)s.sched_priority=rtlvl;
+		else s.sched_priority=sched_get_priority_max(SCHED_RR);
 		if(sched_setscheduler(0,SCHED_RR,&s))
 		{
 			fprintf(stderr,"Can't set realtime priority.\n");
