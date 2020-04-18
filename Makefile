@@ -5,16 +5,22 @@
 #
 # This file is put in the public domain. Have fun!
 #
+OPTS=
+#
+# Enable the following for Raspberry Pi 4B
+#
+# OPTS=-march=native -mthumb -fomit-frame-pointer -fno-stack-protector
+
 all: rtctool chrony2rtc
 
 rtctool: rtctool.c
-	gcc -Wall -Os -s -o rtctool rtctool.c
+	gcc -Wall -Os $(OPTS) -s -o rtctool rtctool.c
 
 chrony2rtc: chrony2rtc.c
-	gcc -Wall -Os -s -o chrony2rtc chrony2rtc.c -lm
+	gcc -Wall -Os $(OPTS) -s -o chrony2rtc chrony2rtc.c -lm
 
 libeeprom_i2c.a: libeeprom_i2c.c eeprom_i2c.h
-	gcc -Wall -Os -c libeeprom_i2c.c
+	gcc -Wall -Os $(OPTS) -c libeeprom_i2c.c
 	ar -rcuU libeeprom_i2c.a libeeprom_i2c.o
 
 install: rtctool chrony2rtc
